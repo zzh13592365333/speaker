@@ -1,0 +1,11 @@
+torch
+numpy
+scikit-learn
+tqdm
+pandas
+Pillow
+transformers
+librosa
+soundfile
+omegaconf
+PyYAML
