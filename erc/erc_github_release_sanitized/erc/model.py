@@ -104,7 +104,7 @@ class CrossModalInteraction(nn.Module):
         t_base = t_seq.mean(dim=1, keepdim=True)
         t_guided = self.norm_t(t_ctx + t_base).squeeze(1)
 
-        delta = self.delta_fuser(torch.cat([a_guided - v_guided, t_guided - v_guided], dim=-1))
+        delta = self.delta_fuser(torch.cat([t_guided - v_guided, a_guided - v_guided], dim=-1))
         return {
             "v_guided": v_guided,
             "a_guided": a_guided,
@@ -212,7 +212,7 @@ class MultimodalERCModel(nn.Module):
         t_final = inter["t_guided"]
         a_final = inter["a_guided"]
 
-        combined = torch.cat([t_final, a_final, v_final], dim=-1)
+        combined = torch.cat([v_final, t_final, a_final], dim=-1)
         logits = self.classifier(combined)
 
         cl_features = {
