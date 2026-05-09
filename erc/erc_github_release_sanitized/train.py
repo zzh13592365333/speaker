@@ -156,7 +156,8 @@ def train(args):
     criterion_infonce = InfoNCE(args.infonce_temp).to(device)
     criterion_supcon = SupConLoss(args.supcon_temp).to(device)
 
-    best_val_f1 = 0.0
+    best_val_f1 = -1.0
+    best_val_test_f1 = 0.0
     best_val_report = ""
 
     for epoch in range(args.epochs):
@@ -205,23 +206,28 @@ def train(args):
 
         val_metrics, v_lab, v_pred, _, _ = evaluate(model, val_loader, device, val_set)
         test_metrics, t_lab, t_pred, t_ids, _ = evaluate(model, test_loader, device, test_set, collect_details=True)
-        val_report = classification_report(v_lab, v_pred, target_names=label_names, digits=4, zero_division=0)
-        test_report = classification_report(t_lab, t_pred, target_names=label_names, digits=4, zero_division=0)
         log(
-            f"Epoch {epoch + 1}: val_acc={val_metrics['acc']:.4f} val_f1={val_metrics['f1']:.4f} "
+            f"Epoch {epoch + 1}: "
+            f"val_acc={val_metrics['acc']:.4f} val_f1={val_metrics['f1']:.4f} | "
             f"test_acc={test_metrics['acc']:.4f} test_f1={test_metrics['f1']:.4f}",
             log_path,
         )
-        log(test_report, log_path)
 
         if val_metrics["f1"] > best_val_f1:
             best_val_f1 = val_metrics["f1"]
-            best_val_report = test_report
+            best_val_test_f1 = test_metrics["f1"]
+            best_val_report = classification_report(t_lab, t_pred, target_names=label_names, digits=4, zero_division=0)
             torch.save(model.state_dict(), f"best_val_model_{tag}.pth")
             save_predictions(t_ids, t_lab, t_pred, label_names, f"pred_{tag}_best_val_test.json")
-
+            log(
+                f"New best val checkpoint: val_f1={best_val_f1:.4f}; "
+                f"corresponding test_acc={test_metrics['acc']:.4f} test_f1={test_metrics['f1']:.4f}",
+                log_path,
+            )
+            log(best_val_report, log_path)
 
     log("\nFinal summary", log_path)
+    log(f"Best val F1: {best_val_f1:.4f}; corresponding test F1: {best_val_test_f1:.4f}", log_path)
     log(f"Best val-selected test report:\n{best_val_report}", log_path)
     return best_val_f1
 
