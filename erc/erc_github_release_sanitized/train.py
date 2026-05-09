@@ -156,8 +156,8 @@ def train(args):
     criterion_infonce = InfoNCE(args.infonce_temp).to(device)
     criterion_supcon = SupConLoss(args.supcon_temp).to(device)
 
-    best_val_f1, best_test_f1 = 0.0, 0.0
-    best_val_report, best_test_report = "", ""
+    best_val_f1 = 0.0
+    best_val_report = ""
 
     for epoch in range(args.epochs):
         model.train()
@@ -220,16 +220,10 @@ def train(args):
             torch.save(model.state_dict(), f"best_val_model_{tag}.pth")
             save_predictions(t_ids, t_lab, t_pred, label_names, f"pred_{tag}_best_val_test.json")
 
-        if test_metrics["f1"] > best_test_f1:
-            best_test_f1 = test_metrics["f1"]
-            best_test_report = test_report
-            torch.save(model.state_dict(), f"best_test_model_{tag}.pth")
-            save_predictions(t_ids, t_lab, t_pred, label_names, f"pred_{tag}_best_test.json")
 
     log("\nFinal summary", log_path)
     log(f"Best val-selected test report:\n{best_val_report}", log_path)
-    log(f"Best test report:\n{best_test_report}", log_path)
-    return best_test_f1
+    return best_val_f1
 
 
 if __name__ == "__main__":
