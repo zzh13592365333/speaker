@@ -58,9 +58,21 @@ erc_github_release_sanitized/
 
 ## Note on feature files
 
-Pre-extracted MELD/IEMOCAP feature files are not included because they are large and are derived from licensed datasets. To reproduce the experiments, download the official datasets and run the scripts in `feature_tools/` to generate the required `text_*`, `audio_*`, and `video_*_aligned.pkl` files.
+Pre-extracted MELD/IEMOCAP feature files are not included because they are large and are derived from licensed datasets. To reproduce the experiments, please download the official datasets and run the scripts in `feature_tools/` to generate the required multimodal feature files.
+
+The downstream training code expects the following files for each dataset:
+
+- `text_train.pkl`, `text_val.pkl`, `text_test.pkl`
+- `audio_train.pkl`, `audio_val.pkl`, `audio_test.pkl`
+- `video_train_aligned.pkl`, `video_val_aligned.pkl`, `video_test_aligned.pkl`
 
 All exported feature splits use the unified names `train`, `val`, and `test`. For MELD, the official raw `dev` split is exported as `val`.
+
+Expected feature dimensions:
+
+- Text feature: 1024-D
+- Audio feature: 1024-D
+- Video feature: 4096-D
 
 ## Expected feature layout
 
