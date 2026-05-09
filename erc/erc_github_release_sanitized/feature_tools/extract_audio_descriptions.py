@@ -28,11 +28,10 @@ def collect_meld(meld_root):
 def collect_iemocap(iemocap_root):
     data = []
     for wav in Path(iemocap_root).glob("Session*/sentences/wav/*/*.wav"):
-        try:
-            session = wav.parts[-5].replace("Session", "")
-        except Exception:
-            session = "unknown"
-        data.append((f"iemocap_session{session}_{wav.stem}", str(wav)))
+        # Keep the key format consistent with the VLM extractor and VAD files:
+        #   iemocap_<utterance_id>
+        # where <utterance_id> is the wav stem, e.g. Ses01F_impro01_F000.
+        data.append((f"iemocap_{wav.stem}", str(wav)))
     return data
 
 
