@@ -95,17 +95,21 @@ class MultimodalDataset(Dataset):
             raise ValueError(f"{split}: text/features, labels, ids length mismatch")
 
         self.audio_map = {}
+        self.audio_label_map = {}
         if "audio" in modes:
             audio_file = os.path.join(cfg.feature_root, cfg.audio_dir, cfg.audio_pattern.format(split=split))
             print(f"[{cfg.dataset.upper()} {split.upper()}] audio: {audio_file}")
-            self.audio_map = self._load_audio_map(audio_file)
+            self.audio_map, self.audio_label_map = self._load_audio_map(audio_file)
 
         self.video_map = {}
+        self.video_label_map = {}
         if "video" in modes:
             video_file = os.path.join(cfg.feature_root, cfg.video_dir, cfg.video_pattern.format(split=split))
             print(f"[{cfg.dataset.upper()} {split.upper()}] video: {video_file}")
             video_raw = _read_pickle(video_file)
             self.video_map = {str(i): f for i, f in zip(video_raw["ids"], video_raw["features"])}
+            if "labels" in video_raw:
+                self.video_label_map = {str(i): int(l) for i, l in zip(video_raw["ids"], video_raw["labels"])}
 
         self._check_modal_coverage()
         self.dialogue_ids = [self._parse_dialogue_id(str(i)) for i in self.ids_arr]
@@ -116,12 +120,22 @@ class MultimodalDataset(Dataset):
         self.vad_arr = self._build_vad_array()
         print(f"[{cfg.dataset.upper()} {split.upper()}] samples={self.length}, context_mode={context_mode}")
 
-    def _load_audio_map(self, path: str) -> Dict[str, object]:
+    def _load_audio_map(self, path: str):
         raw = _read_pickle(path)
         if isinstance(raw, dict) and all(k in raw for k in ("features", "ids")):
-            return {str(i): f for i, f in zip(raw["ids"], raw["features"])}
+            feat_map = {str(i): f for i, f in zip(raw["ids"], raw["features"])}
+            label_map = {}
+            if "labels" in raw:
+                label_map = {str(i): int(l) for i, l in zip(raw["ids"], raw["labels"])}
+            return feat_map, label_map
         if isinstance(raw, list):
-            return {str(item.get("id_str", item.get("id"))): item.get("audio", item.get("feature")) for item in raw}
+            feat_map, label_map = {}, {}
+            for item in raw:
+                uid = str(item.get("id_str", item.get("id")))
+                feat_map[uid] = item.get("audio", item.get("feature"))
+                if "label" in item:
+                    label_map[uid] = int(item["label"])
+            return feat_map, label_map
         raise ValueError(f"Unsupported audio pkl format: {path}")
 
     def _check_modal_coverage(self) -> None:
@@ -136,6 +150,17 @@ class MultimodalDataset(Dataset):
             print(f"[{self.cfg.dataset.upper()} {self.split.upper()}] {name}: text={len(text_ids)}, {name}={len(modal_set)}, missing={len(missing)}, extra={len(extra)}")
             if missing:
                 raise ValueError(f"{self.split}: missing {name} features for {len(missing)} text ids, e.g. {missing[:5]}")
+            label_map = self.audio_label_map if name == "audio" else self.video_label_map
+            if label_map:
+                mismatches = []
+                for pos, uid in enumerate(text_ids):
+                    if uid in label_map and int(self.labels_arr[pos]) != int(label_map[uid]):
+                        mismatches.append((uid, int(self.labels_arr[pos]), int(label_map[uid])))
+                if mismatches:
+                    raise ValueError(
+                        f"{self.split}: {name} label mismatch for {len(mismatches)} samples, "
+                        f"e.g. (id, text_label, {name}_label)={mismatches[:5]}"
+                    )
 
     def _parse_dialogue_id(self, id_str: str) -> str:
         if self.cfg.dataset == "meld":
@@ -225,6 +250,8 @@ class MultimodalDataset(Dataset):
             if v.dim() == 1:
                 v = v.unsqueeze(0)
             elif v.dim() == 2 and v.shape[0] != 1:
+                # Qwen-style embedding outputs may contain multiple tokens; the final token is used
+                # as the global representation in this project.
                 v = v[-1:, :]
             if v.dim() != 2 or v.shape[-1] != 4096:
                 raise ValueError(f"Invalid video feature shape for {uid}: {tuple(v.shape)}")
