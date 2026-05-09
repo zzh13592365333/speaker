@@ -1,4 +1,4 @@
-# Reliability-Aware Visual ERC (Sanitized Release)
+# Reliability-Aware Visual ERC
 
 This repository contains a GitHub-safe research code template for a two-stage multimodal Emotion Recognition in Conversation (ERC) framework over MELD and IEMOCAP.
 
