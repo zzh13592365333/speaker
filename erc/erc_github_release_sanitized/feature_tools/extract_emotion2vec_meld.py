@@ -80,11 +80,13 @@ def parse_csv(csv_path):
     return rows
 
 
-def process_split(split, meld_root, output_dir, model, normalize, device):
-    wav_dir = os.path.join(meld_root, split, f"{split}_splits")
-    csv_path = os.path.join(meld_root, split, f"{split}_sent_emo.csv")
+def process_split(split, meld_root, output_dir, model, normalize, device, out_split=None):
+    raw_split = "dev" if split == "val" else split
+    out_split = out_split or ("val" if raw_split == "dev" else raw_split)
+    wav_dir = os.path.join(meld_root, raw_split, f"{raw_split}_splits")
+    csv_path = os.path.join(meld_root, raw_split, f"{raw_split}_sent_emo.csv")
     results = []
-    for item in tqdm(parse_csv(csv_path), desc=split):
+    for item in tqdm(parse_csv(csv_path), desc=out_split):
         wav_path = os.path.join(wav_dir, f"{item['id_str']}.wav")
         if os.path.exists(wav_path):
             try:
@@ -95,7 +97,7 @@ def process_split(split, meld_root, output_dir, model, normalize, device):
             audio = torch.zeros(MAX_FRAMES, 1024)
         results.append({**item, "audio": audio})
     os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, f"audio_{split}.pkl"), "wb") as f:
+    with open(os.path.join(output_dir, f"audio_{out_split}.pkl"), "wb") as f:
         pickle.dump(results, f)
 
 
@@ -106,7 +108,8 @@ def main():
     ap.add_argument("--meld_root", required=True)
     ap.add_argument("--output_dir", required=True)
     ap.add_argument("--gpu", type=int, default=0)
-    ap.add_argument("--split", default="all", choices=["train","dev","test","all"])
+    ap.add_argument("--split", default="all", choices=["train","val","dev","test","all"],
+                    help="Use train/val/test for exported files. MELD raw validation split is dev; val maps to dev.")
     args = ap.parse_args()
     model, normalize, device = load_model(args.emotion2vec_repo, args.checkpoint_path, args.gpu)
     splits = ["train", "dev", "test"] if args.split == "all" else [args.split]
