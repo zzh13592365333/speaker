@@ -55,6 +55,13 @@ erc_github_release_sanitized/
 └── RELEASE_CHECKLIST.md
 ```
 
+
+## Note on feature files
+
+Pre-extracted MELD/IEMOCAP feature files are not included because they are large and are derived from licensed datasets. To reproduce the experiments, download the official datasets and run the scripts in `feature_tools/` to generate the required `text_*`, `audio_*`, and `video_*_aligned.pkl` files.
+
+All exported feature splits use the unified names `train`, `val`, and `test`. For MELD, the official raw `dev` split is exported as `val`.
+
 ## Expected feature layout
 
 ### MELD
