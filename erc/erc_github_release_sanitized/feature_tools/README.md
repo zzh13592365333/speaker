@@ -4,6 +4,13 @@ All scripts use command-line paths instead of private machine-specific constants
 
 Typical order:
 
+
+Split naming policy:
+
+- Exported feature files always use `train`, `val`, and `test`.
+- For MELD, the official raw validation folder is `dev`, but exported feature files should be named with `val` (for example, `audio_val.pkl`).
+- For IEMOCAP, CSV files should be named `train.csv`, `val.csv`, and `test.csv`.
+
 0. Extract text features with RoBERTa / EmoBERTa-style inputs:
 ```bash
 python feature_tools/extract_text_emoberta_features.py \
@@ -44,7 +51,7 @@ python feature_tools/extract_emotion2vec_meld.py \
   --emotion2vec_repo /path/to/emotion2vec-main \
   --checkpoint_path /path/to/emotion2vec_plus_large/model.pt \
   --meld_root /path/to/MELD.Raw \
-  --output_dir /path/to/meld/features/yinpin_emotion2vec \
+  --output_dir /path/to/meld/features/yinpin_sorted \
   --split all --gpu 0
 ```
 
