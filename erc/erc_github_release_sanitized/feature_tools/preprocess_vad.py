@@ -81,7 +81,8 @@ def process_meld(meld_root, lexicon, out):
 
 
 def process_iemocap(iemocap_csv_root, lexicon, out):
-    for split in ["train", "dev", "test"]:
+    # IEMOCAP uses unified train/val/test split names in this release.
+    for split in ["train", "val", "test"]:
         csv_path = Path(iemocap_csv_root) / f"{split}.csv"
         if not csv_path.exists():
             continue
